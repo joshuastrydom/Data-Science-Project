@@ -120,27 +120,39 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width 
 if(!require("tidyverse")) install.packages("tidyverse")
 library(tidyverse)
 library(readr)
-circuits <- read_csv("data/circuits.csv")
-constructor_results <- read_csv("data/constructor_results.csv")
-constructor_standings <- read_csv("data/constructor_standings.csv")
-constructors <- read_csv("data/constructors.csv")
-driver_standings <- read_csv("data/driver_standings.csv")
-drivers <- read_csv("data/drivers.csv")
-F1_Constructor_Standings11 <- read_delim("data/F1_Constructor_Standings11.csv", 
+circuits <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/circuits.csv")
+constructor_results <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/constructor_results.csv")
+constructor_standings <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/constructor_standings.csv")
+constructors <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/constructors.csv")
+driver_standings <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/driver_standings.csv")
+drivers <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/drivers.csv")
+F1_Constructor_Standings11 <- read_delim("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/F1_Constructor_Standings11.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
-F1_Driver_Standings11 <- read_delim("data/F1_Driver_Standings11.csv", 
+F1_Driver_Standings11 <- read_delim("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/F1_Driver_Standings11.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
-F1_Driver_Standings <- read_csv("data/F1_Driver_Standings.csv")
-F1_Race_Results <- read_csv("data/F1_Race_Results.csv")
-races <- read_csv("data/races.csv") 
-results <- read_csv("data/results.csv")
-status <- read_csv("data/status.csv") 
-qualifying <- read_csv("data/qualifying.csv")
+F1_Driver_Standings <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/F1_Driver_Standings.csv")
+F1_Race_Results <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/F1_Race_Results.csv")
+races <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/races.csv") 
+results <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/results.csv")
+status <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/status.csv") 
+qualifying <- read_csv("/Users/joshuastrydom/Desktop/ECONOMICS POSTGRADUATE/Masters/Data Science/Data-Science-Project/Formula One Prediction Model/data/qualifying.csv")
 
 # Notice that as you are working in a .Rproj file (I am assuming you are) - the relative paths of your directories start at your specified root.
 # This means that when working in a .Rproj file, you never need to use getwd() - it is assumed as your base root automatically.
-# write_rds(Example_data, path = "data/Example_data.rds")
-
+write_rds(circuits, path = "data/circuits.rds")
+write_rds(constructor_results, path = "data/constructor_results.rds")
+write_rds(constructor_standings, path = "data/constructor_standings.rds")
+write_rds(constructors, path = "data/constructors.rds")
+write_rds(driver_standings, path = "data/driver_standings.rds")
+write_rds(drivers, path = "data/drivers.rds")
+write_rds(F1_Constructor_Standings11, path = "data/F1_Constructor_Standings11.rds")
+write_rds(F1_Driver_Standings, path = "data/F1_Driver_Standings.rds")
+write_rds(F1_Race_Results, path = "data/F1_Race_Results.rds")
+write_rds(races, path = "data/races.rds")
+write_rds(results, path = "data/results.rds")
+write_rds(status, path = "data/status.rds")
+write_rds(qualifying, path = "data/qualifying.rds")
+write_rds(F1_Driver_Standings11, path = "data/F1_Driver_Standings11.rds")
 ```
 
 
@@ -166,7 +178,339 @@ Discussion of data should be thorough with a table of statistics and ideally a f
 
 In your tempalte folder, you will find a Data and a Code folder. In order to keep your data files neat, store all of them in your Data folder. Also, I strongly suggest keeping this Rmd file for writing and executing commands, not writing out long pieces of data-wrangling. In the example below, I simply create a ggplot template for scatter plot consistency. I suggest keeping all your data in a data folder.
 
-```{r}
+```{r Functions, include=FALSE, warning=FALSE}
+
+race_byname <- function(data1=data1, data2=data2, data3=data3, data4=data4){
+    RD <- left_join(
+        data1,
+        data2,
+        by = "driverId"
+    ) |> arrange(resultId)
+    Rc <- left_join(
+        RD,
+        data3,
+        by = "constructorId"
+    ) |> arrange(resultId)
+    Rs <- left_join(
+        Rc,
+        data4,
+        by = "statusId"
+    ) |> arrange(resultId)
+    Rs[, c(1,2,3,7,10,18,21,23,28,31)] |> filter(raceId > 859)
+}
+df_race_byrace_x <- function(data = data, year = year){
+    X <- data |> filter(year == year)
+    X[,c(1:5, 7:10, 14)]
+}
+raceorder <- function(data1=data1, data2=data2, year=year){
+    order <- data1[1:5] |> filter(year==year)
+    order
+    won <- left_join(
+        order,
+        data2,
+        by = "round"
+    ) |> filter(year.x==year, year.y==year)
+    won
+}
+race_winners_by_track_func <- function(data = data, position = position, year = year){
+    Y <- data |> filter(position == 1, year > 2011) |> arrange(year)
+    Y[, c(1,2,3,4,7,8, 11,12,13,14)]
+}
+F1_Standings <- function(data1=data1, data2=data2, Year=Year, Pos=Pos){
+    D <- data1 |> filter(Year >= 2012) |> filter(Pos == 1)
+    C <- data2 |> filter(Year >= 2012) |> filter(Pos == 1)
+    DC <- full_join(
+        D,
+        C,
+        by = "Year") |> arrange("Pos")
+    names(DC)[1] <- "Position"
+    names(DC)[2] <- "Drivers Championship"
+    names(DC)[8] <- "Constructors Championship"
+    names(DC)[5] <- "Driver Points"
+    names(DC)[9] <- "Constructor Points"
+    DC[, c(1,2,5,6,8,9)]
+}
+total_points <- function(data1=data1, data2=data2, year=year){
+    P <- data1 |> filter(year==year) |> arrange("Driver")
+    TP <- left_join(
+        P,
+        data2,
+        by = "Driver"
+    ) |> filter(Year.x == year, Year.y == year)
+    names(TP)[4] <- "Year"
+    TP[ , c(1,2,4,5,6,7)]
+}
+totalpoints <- function(data=data, year=Year){
+    P <- data |> filter(year==Year)
+    TP <- P[,3]
+    TP
+}
+totalpoints_F5 <- function(data=data, year=Year){
+    P_F5 <- data |> filter(year==Year)
+    TP_F5 <- P_F5[,4] + P_F5[,8]
+    TP_F5
+}
+totalpoints_A5 <- function(data=data, year=Year){
+    P_A5 <- data |> filter(year==Year)
+    TP_A5 <- P_A5[,6] + P_A5[,10]
+    TP_A5
+}
+totalpoints_F10 <- function(data=data, year=Year){
+    P_F10 <- data |> filter(year==Year)
+    TP_F10 <- P_F10[,5] + P_F10[,9]
+    TP_F10
+}
+totalpoints_A10 <- function(data=data, year=Year){
+    P_A10 <- data |> filter(year==Year)
+    TP_A10 <- P_A10[,7] + P_A10[,11]
+    TP_A10
+}
+plottotalpoints <- function(data1=data1, year=Year){
+    PTP <- data1 |> arrange(Year) |> filter(year == Year)
+    plot <- PTP |>
+        ggplot() +
+        geom_point(aes(x=Round, y=Points.x, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total Points", y = "Points")
+    plot
+}
+plottotalpoints_F10 <- function(data1=data1, year=Year){
+    PTP <- data1 |> arrange(Year) |> filter(year == Year) |> filter(Round <= 10)
+    plot <- PTP |>
+        ggplot() +
+        geom_point(aes(x=Round, y=Points.x, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total Points first 10", y = "Points")
+    plot
+}
+plottotalpoints_A10 <- function(data1=data1, year=Year){
+    PTP <- data1 |> arrange(Year) |> filter(year == Year) |> filter(Round > 10)
+    plot <- PTP |>
+        ggplot() +
+        geom_point(aes(x=Round, y=Points.x, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total points after 10", y = "Points")
+    plot
+}
+accumpoints <- function(data1=data1, data2=data2, year=Year){
+    A <- data1 |> filter(year==Year) |> arrange("Driver")
+    P <- left_join(
+        A,
+        data2[,c(1,2)],
+        by = "Driver"
+    ) |> filter(Year.x == year, Year.y == year)
+    names(P)[4] <- "Year"
+    P$Accumulated.Points = cumsum(P$Points)
+    P[, c(1,2,4,5,6,7,9)]
+}
+plotaccumpoints <- function(data1=data1, year=Year){
+    PAP <- data1 |> arrange(Year) |> filter(year == Year)
+    plot <- PAP |>
+        ggplot() +
+        geom_point(aes(x = Round, y = Accumulated.Points, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total Accumulated Points (AP)")
+    plot
+}
+accumpoints_F10 <- function(data1=data1, data2=data2, year=Year){
+    A <- data1 |> filter(year==Year) |> filter(Round <= 10) |> arrange("Driver")
+    P <- left_join(
+        A,
+        data2[,c(1,2)],
+        by = "Driver"
+    ) |> filter(Year.x == year, Year.y == year)
+    names(P)[4] <- "Year"
+    P$Accumulated.Points = cumsum(P$Points)
+    P[, c(1,2,4,5,6,7)]
+}
+#H <- left_join(df_totalpoints, champions[,c(1,2)], by = "Driver") |> drop_na() |> arrange("Year.y")
+plotaccumpoints_F10 <- function(data1=data1, year=Year){
+    PAP <- data1 |> arrange(Year) |> filter(year == Year) |> filter(Round <= 10)
+    plot <- PAP |>
+        ggplot() +
+        geom_point(aes(x = Round, y = Accumulated.Points, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total AP first 10")
+    plot
+}
+accumpoints_A10 <- function(data1=data1, data2=data2, year=Year){
+    A <- data1 |> filter(year==Year) |> filter(Round > 10) |> arrange("Driver")
+    P <- left_join(
+        A,
+        data2[,c(1,2)],
+        by = "Driver"
+    ) |> filter(Year.x == year, Year.y == year)
+    names(P)[4] <- "Year"
+    P$Accumulated.Points = cumsum(P$Points)
+    P[, c(1,2,4,5,6,7)]
+}
+plotaccumpoints_A10 <- function(data1=data1, year=Year){
+    PAP <- data1 |> arrange(Year) |> filter(year == Year) |> filter(Round > 10)
+    plot <- PAP |>
+        ggplot() +
+        geom_point(aes(x = Round, y = Accumulated.Points, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total AP after 10")
+    plot
+}
+scored_points <- function(data1=data1, data2=data2, year=year){
+    S <- data1 |> filter(year==year) |> arrange("Driver")
+    C <- left_join(
+        S,
+        data2,
+        by = "Driver"
+    ) |> filter(Year.x == year, Year.y == year)
+    names(C)[4] <- "Year"
+    C[ , c(1,2,4,5,6,7)]
+}
+scored_points_F5 <- function(data=data, year=year){
+    data |> filter(Round <= 5)
+}
+points_scored_F5 <- function(data1=data1){
+    PS_F5 <- sum(data1$Points)
+    PS_F5
+}
+scored_points_A5 <- function(data=data, year=year){
+    data |> filter(Round > 5)
+}
+points_scored_A5 <- function(data1=data1){
+    PS_A5 <- sum(data1$Points)
+    PS_A5
+}
+scored_points_F10 <- function(data=data, year=year){
+    data |> filter(Round <= 10)
+}
+points_scored_F10 <- function(data1=data1){
+    PS_F10 <- sum(data1$Points)
+    PS_F10
+}
+scored_points_A10 <- function(data=data, year=year){
+    data |> filter(Round > 10)
+}
+points_scored_A10 <- function(data1=data1){
+    PS_A10 <- sum(data1$Points)
+    PS_A10
+}
+plotscoring <- function(data1=data1, year=Year){
+    PS <- data1 |> arrange(Year) |> filter(year == Year)
+    plot <- PS |>
+        ggplot() +
+        geom_point(aes(x=Round, y=Points.x, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total 'scoring' Points", y = "Points")
+    plot
+}
+won_races <- function(data1=data1, data2=data2, year=year){
+    S <- data1 |> filter(year==year) |> arrange("Driver")
+    C <- left_join(
+        S,
+        data2,
+        by = "Driver"
+    ) |> filter(Year.x == year, Year.y == year)
+    names(C)[4] <- "Year"
+    C[ , c(1,2,4,5,6,7)]
+}
+won_races_F5 <- function(data=data, year=year){
+    data |> filter(Round <= 5)
+}
+points_won_F5 <- function(data1=data1){
+    PW_F5 <- sum(data1$Points)
+    PW_F5
+}
+won_races_A5 <- function(data=data, year=year){
+    data |> filter(Round > 5)
+}
+points_won_A5 <- function(data1=data1){
+    PW_A5 <- sum(data1$Points)
+    PW_A5
+}
+won_races_F10 <- function(data=data, year=year){
+    data |> filter(Round <= 10)
+}
+points_won_F10 <- function(data1=data1){
+    PW_F10 <- sum(data1$Points)
+    PW_F10
+}
+won_races_A10 <- function(data=data, year=year){
+    data |> filter(Round > 10)
+}
+points_won_A10 <- function(data1=data1){
+    PW_A10 <- sum(data1$Points)
+    PW_A10
+}
+winners_points <- function(data=data, year=year){
+    W <- data |> filter(Year==year)
+    WP <- W |> filter(Points == max(Points))
+    WP
+}
+plotwinning <- function(data1=data1, year=Year){
+    PW <- data1 |> arrange(Year) |> filter(year == Year)
+    plot <- PW |>
+        ggplot() +
+        geom_point(aes(x=Round, y=Points.x, color = TrackId), alpha = 0.8, size = 3) +
+        theme_bw() +
+        theme(legend.background = element_rect(fill = "white", size = 1, color = "white"),
+              legend.text = element_text(size = 6),
+              legend.title = element_text(size = 10, face = "bold"),
+              plot.title = element_text(size = 12, face = "bold"),
+              aspect.ratio = 9 / 16,
+              legend.position = "none") +
+        guides(color = guide_legend(override.aes = list(size = 4))) +
+        labs(title = "Total 'winning' Points", y = "Points")
+    plot
+}
+```
+
+```{r, include=FALSE}
 race_byname <- race_byname(data1=results, data2=drivers, data3=constructors, data4=status)
 library(lubridate)
 race_byrace <- left_join(
@@ -175,41 +519,29 @@ race_byrace <- left_join(
     by = "raceId") |> arrange(resultId)
 df_race_byrace <- data.frame(race_byrace)
 
-df_race_byrace_x(data = df_race_byrace, year = 2012)
-df_race_byrace_x(data = df_race_byrace, year = 2013)
-df_race_byrace_x(data = df_race_byrace, year = 2014)
-df_race_byrace_x(data = df_race_byrace, year = 2015)
-df_race_byrace_x(data = df_race_byrace, year = 2016)
-df_race_byrace_x(data = df_race_byrace, year = 2017)
-df_race_byrace_x(data = df_race_byrace, year = 2018)
-df_race_byrace_x(data = df_race_byrace, year = 2019)
-df_race_byrace_x(data = df_race_byrace, year = 2020)
-df_race_byrace_x(data = df_race_byrace, year = 2021)
+#df_race_byrace_x(data = df_race_byrace, year = 2012)
+#df_race_byrace_x(data = df_race_byrace, year = 2013)
+#df_race_byrace_x(data = df_race_byrace, year = 2014)
+#df_race_byrace_x(data = df_race_byrace, year = 2015)
+#df_race_byrace_x(data = df_race_byrace, year = 2016)
+#df_race_byrace_x(data = df_race_byrace, year = 2017)
+#df_race_byrace_x(data = df_race_byrace, year = 2018)
+#df_race_byrace_x(data = df_race_byrace, year = 2019)
+#df_race_byrace_x(data = df_race_byrace, year = 2020)
+#df_race_byrace_x(data = df_race_byrace, year = 2021)
 
 race_winners_by_track_func(data = race_byrace)
 
-F1_Standings(data1= F1_Driver_Standings11, data2= F1_Constructor_Standings11)
-F1_Standings <- F1_Standings(data1= F1_Driver_Standings11, data2= F1_Constructor_Standings11)
-F1_Standings_Final <- F1_Standings |> mutate(Driver = c("Vettel", "Vettel", "Hamilton", "Hamilton", "Rosberg", "Hamilton", "Hamilton", "Hamilton", "Hamilton", "Verstappen"))
-date <- F1_Standings_Final[, 4]
-driver <- F1_Standings_Final[, 7]
-constructor <- F1_Standings_Final[, 5]
-points1 <- F1_Standings_Final[,3]
-points2 <- F1_Standings_Final[,6]
-glue::glue("
-           In {date}, {driver} won the drivers championship with {points1} points and {constructor} won the constructors championship with {points2} points.
-           ")
-
-raceorder(data1 = races, data2 = race_winners_by_track, year=2012)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2013)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2014)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2015)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2016)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2017)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2018)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2019)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2020)
-raceorder(data1 = races, data2 = race_winners_by_track, year=2021)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2012)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2013)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2014)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2015)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2016)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2017)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2018)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2019)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2020)
+#raceorder(data1 = races, data2 = race_winners_by_track, year=2021)
 
 points_per_driver <- aggregate(race_byrace$points,
                                by = list(race_byrace$surname, race_byrace$year),
@@ -237,6 +569,9 @@ names(df_totalpoints)[4] <- "Year"
 names(df_totalpoints)[5] <- "Round"
 names(df_totalpoints)[6] <- "TrackId"
 names(df_totalpoints)[7] <- "Track"
+champions <- rbind(winners_points_2012, winners_points_2013, winners_points_2014, winners_points_2015, winners_points_2016, winners_points_2017, winners_points_2018, winners_points_2019, winners_points_2020, winners_points_2021)
+#df_champions <- data.frame(champions)
+
 total_points_2012 <- total_points(data1=df_totalpoints, data2=champions, year=2012)
 total_points_2013 <- total_points(data1=df_totalpoints, data2=champions, year=2013)
 total_points_2014 <- total_points(data1=df_totalpoints, data2=champions, year=2014)
@@ -259,7 +594,7 @@ names(df_scorer_points)[4] <- "Year"
 names(df_scorer_points)[5] <- "Round"
 names(df_scorer_points)[6] <- "TrackId"
 names(df_scorer_points)[7] <- "Track"
-champions <- F1_Standings_Final[, c(4,7)]
+#champions <- F1_Standings_Final[, c(4,7)]
 scored_points_2012 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2012)
 scored_points_2013 <-scored_points(data1 = df_scorer_points, data2 = champions, year = 2013)
 scored_points_2014 <-scored_points(data1 = df_scorer_points, data2 = champions, year = 2014)
@@ -467,46 +802,6 @@ winvalues_F10 <- c(points_won_F10_2012, points_won_F10_2013, points_won_F10_2014
 winvalues_A5 <- c(points_won_A5_2012, points_won_A5_2013, points_won_A5_2014, points_won_A5_2015, points_won_A5_2016, points_won_A5_2017, points_won_A5_2018, points_won_A5_2019, points_won_A5_2020, points_won_A5_2021)
 winvalues_A10 <- c(points_won_A10_2012, points_won_A10_2013, points_won_A10_2014, points_won_A10_2015, points_won_A10_2016, points_won_A10_2017, points_won_A10_2018, points_won_A10_2019, points_won_A10_2020, points_won_A10_2021)
 pointvalues <- data.frame(winnerspoints, pointvalues_F5, pointvalues_F10, pointvalues_A5, pointvalues_A10, winvalues_F5, winvalues_F10, winvalues_A5, winvalues_A10)
-totalpoints_F5(data=pointvalues, year=2012)
-totalpoints_F5(data=pointvalues, year=2013)
-totalpoints_F5(data=pointvalues, year=2014)
-totalpoints_F5(data=pointvalues, year=2015)
-totalpoints_F5(data=pointvalues, year=2016)
-totalpoints_F5(data=pointvalues, year=2017)
-totalpoints_F5(data=pointvalues, year=2018)
-totalpoints_F5(data=pointvalues, year=2019)
-totalpoints_F5(data=pointvalues, year=2020)
-totalpoints_F5(data=pointvalues, year=2021)
-totalpoints_F10(data=pointvalues, year=2012)
-totalpoints_F10(data=pointvalues, year=2013)
-totalpoints_F10(data=pointvalues, year=2014)
-totalpoints_F10(data=pointvalues, year=2015)
-totalpoints_F10(data=pointvalues, year=2016)
-totalpoints_F10(data=pointvalues, year=2017)
-totalpoints_F10(data=pointvalues, year=2018)
-totalpoints_F10(data=pointvalues, year=2019)
-totalpoints_F10(data=pointvalues, year=2020)
-totalpoints_F10(data=pointvalues, year=2021)
-totalpoints_A5(data=pointvalues, year=2012)
-totalpoints_A5(data=pointvalues, year=2013)
-totalpoints_A5(data=pointvalues, year=2014)
-totalpoints_A5(data=pointvalues, year=2015)
-totalpoints_A5(data=pointvalues, year=2016)
-totalpoints_A5(data=pointvalues, year=2017)
-totalpoints_A5(data=pointvalues, year=2018)
-totalpoints_A5(data=pointvalues, year=2019)
-totalpoints_A5(data=pointvalues, year=2020)
-totalpoints_A5(data=pointvalues, year=2021)
-totalpoints_A10(data=pointvalues, year=2012)
-totalpoints_A10(data=pointvalues, year=2013)
-totalpoints_A10(data=pointvalues, year=2014)
-totalpoints_A10(data=pointvalues, year=2015)
-totalpoints_A10(data=pointvalues, year=2016)
-totalpoints_A10(data=pointvalues, year=2017)
-totalpoints_A10(data=pointvalues, year=2018)
-totalpoints_A10(data=pointvalues, year=2019)
-totalpoints_A10(data=pointvalues, year=2020)
-totalpoints_A10(data=pointvalues, year=2021)
 
 accumpoints_2012 <- accumpoints(data1=df_totalpoints, data2=champions, year=2012)
 accumpoints_2013 <- accumpoints(data1=df_totalpoints, data2=champions, year=2013)
@@ -520,168 +815,115 @@ accumpoints_2020 <- accumpoints(data1=df_totalpoints, data2=champions, year=2020
 accumpoints_2021 <- accumpoints(data1=df_totalpoints, data2=champions, year=2021)
 accumpoints_bound <- rbind(accumpoints_2012, accumpoints_2013, accumpoints_2014, accumpoints_2015, accumpoints_2016, accumpoints_2017, accumpoints_2018, accumpoints_2019, accumpoints_2020, accumpoints_2021) |> arrange("Year")
 accumpoints_bound$TrackId <- as.character(accumpoints_bound$TrackId)
-accumpoints_F10_2012 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2012)
-accumpoints_F10_2013 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2013)
-accumpoints_F10_2014 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2014)
-accumpoints_F10_2015 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2015)
-accumpoints_F10_2016 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2016)
-accumpoints_F10_2017 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2017)
-accumpoints_F10_2018 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2018)
-accumpoints_F10_2019 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2019)
-accumpoints_F10_2020 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2020)
-accumpoints_F10_2021 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2021)
-accumpoints_A10_2012 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2012)
-accumpoints_A10_2013 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2013)
-accumpoints_A10_2014 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2014)
-accumpoints_A10_2015 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2015)
-accumpoints_A10_2016 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2016)
-accumpoints_A10_2017 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2017)
-accumpoints_A10_2018 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2018)
-accumpoints_A10_2019 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2019)
-accumpoints_A10_2020 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2020)
-accumpoints_A10_2021 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2021)
-
-plottotalpoints(data1=totalpoints_bound, year=2012)
-plottotalpoints(data1=totalpoints_bound, year=2013)
-plottotalpoints(data1=totalpoints_bound, year=2014)
-plottotalpoints(data1=totalpoints_bound, year=2015)
-plottotalpoints(data1=totalpoints_bound, year=2016)
-plottotalpoints(data1=totalpoints_bound, year=2017)
-plottotalpoints(data1=totalpoints_bound, year=2018)
-plottotalpoints(data1=totalpoints_bound, year=2019)
-plottotalpoints(data1=totalpoints_bound, year=2020)
-plottotalpoints(data1=totalpoints_bound, year=2021)
-plottotalpoints_F10(data1=totalpoints_bound, year=2012)
-plottotalpoints_F10(data1=totalpoints_bound, year=2013)
-plottotalpoints_F10(data1=totalpoints_bound, year=2014)
-plottotalpoints_F10(data1=totalpoints_bound, year=2015)
-plottotalpoints_F10(data1=totalpoints_bound, year=2016)
-plottotalpoints_F10(data1=totalpoints_bound, year=2017)
-plottotalpoints_F10(data1=totalpoints_bound, year=2018)
-plottotalpoints_F10(data1=totalpoints_bound, year=2019)
-plottotalpoints_F10(data1=totalpoints_bound, year=2020)
-plottotalpoints_F10(data1=totalpoints_bound, year=2021)
-plottotalpoints_A10(data1=totalpoints_bound, year=2012)
-plottotalpoints_A10(data1=totalpoints_bound, year=2013)
-plottotalpoints_A10(data1=totalpoints_bound, year=2014)
-plottotalpoints_A10(data1=totalpoints_bound, year=2015)
-plottotalpoints_A10(data1=totalpoints_bound, year=2016)
-plottotalpoints_A10(data1=totalpoints_bound, year=2017)
-plottotalpoints_A10(data1=totalpoints_bound, year=2018)
-plottotalpoints_A10(data1=totalpoints_bound, year=2019)
-plottotalpoints_A10(data1=totalpoints_bound, year=2020)
-plottotalpoints_A10(data1=totalpoints_bound, year=2021)
-
-plotscoring(data1=scoredpoints_bound, year=2012)
-plotscoring(data1=scoredpoints_bound, year=2013)
-plotscoring(data1=scoredpoints_bound, year=2014)
-plotscoring(data1=scoredpoints_bound, year=2015)
-plotscoring(data1=scoredpoints_bound, year=2016)
-plotscoring(data1=scoredpoints_bound, year=2017)
-plotscoring(data1=scoredpoints_bound, year=2018)
-plotscoring(data1=scoredpoints_bound, year=2019)
-plotscoring(data1=scoredpoints_bound, year=2020)
-plotscoring(data1=scoredpoints_bound, year=2021)
-plotwinning(data1=wonraces_bound, year=2012)
-plotwinning(data1=wonraces_bound, year=2013)
-plotwinning(data1=wonraces_bound, year=2014)
-plotwinning(data1=wonraces_bound, year=2015)
-plotwinning(data1=wonraces_bound, year=2016)
-plotwinning(data1=wonraces_bound, year=2017)
-plotwinning(data1=wonraces_bound, year=2018)
-plotwinning(data1=wonraces_bound, year=2019)
-plotwinning(data1=wonraces_bound, year=2020)
-plotwinning(data1=wonraces_bound, year=2021)
-
-plotaccumpoints(data1=accumpoints_bound, year=2012)
-plotaccumpoints(data1=accumpoints_bound, year=2013)
-plotaccumpoints(data1=accumpoints_bound, year=2014)
-plotaccumpoints(data1=accumpoints_bound, year=2015)
-plotaccumpoints(data1=accumpoints_bound, year=2016)
-plotaccumpoints(data1=accumpoints_bound, year=2017)
-plotaccumpoints(data1=accumpoints_bound, year=2018)
-plotaccumpoints(data1=accumpoints_bound, year=2019)
-plotaccumpoints(data1=accumpoints_bound, year=2020)
-plotaccumpoints(data1=accumpoints_bound, year=2021)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2012)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2013)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2014)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2015)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2016)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2017)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2018)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2019)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2020)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2021)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2012)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2013)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2014)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2015)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2016)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2017)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2018)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2019)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2020)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2021)
+accumpoints_F10_2012 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2012) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2012$Points))
+accumpoints_F10_2013 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2013) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2013$Points))
+accumpoints_F10_2014 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2014) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2014$Points))
+accumpoints_F10_2015 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2015) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2015$Points))
+accumpoints_F10_2016 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2016) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2016$Points))
+accumpoints_F10_2017 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2017) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2017$Points))
+accumpoints_F10_2018 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2018) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2018$Points))
+accumpoints_F10_2019 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2019) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2019$Points))
+accumpoints_F10_2020 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2020) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2020$Points))
+accumpoints_F10_2021 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2021) |> mutate(Accumulated.Points = cumsum(accumpoints_F10_2021$Points))
+accumpoints_A10_2012 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2012) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2012$Points))
+accumpoints_A10_2013 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2013) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2013$Points))
+accumpoints_A10_2014 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2014) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2014$Points))
+accumpoints_A10_2015 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2015) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2015$Points))
+accumpoints_A10_2016 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2016) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2016$Points))
+accumpoints_A10_2017 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2017) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2017$Points))
+accumpoints_A10_2018 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2018) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2018$Points))
+accumpoints_A10_2019 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2019) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2019$Points))
+accumpoints_A10_2020 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2020) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2020$Points))
+accumpoints_A10_2021 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2021) |> mutate(Accumulated.Points = cumsum(accumpoints_A10_2021$Points))
 ```
 
-
 <!-- The following is a code chunk. It must have its own unique name (after the r), or no name. After the comma follows commands for R which are self-explanatory. By default, the code and messages will not be printed in your pdf, just the output: -->
+
+```{r Standings, results='asis'}
+library(xtable)
+F1_Standings(data1= F1_Driver_Standings11, data2= F1_Constructor_Standings11)
+F1_Standings <- F1_Standings(data1= F1_Driver_Standings11, data2= F1_Constructor_Standings11)
+F1_Standings_Final <- F1_Standings |> mutate(Driver = c("Vettel", "Vettel", "Hamilton", "Hamilton", "Rosberg", "Hamilton", "Hamilton", "Hamilton", "Hamilton", "Verstappen"))
+date <- F1_Standings_Final[, 4]
+driver <- F1_Standings_Final[, 7]
+constructor <- F1_Standings_Final[, 5]
+points1 <- F1_Standings_Final[,3]
+points2 <- F1_Standings_Final[,6]
+F1_Standings_Final <- F1_Standings_Final |> tibble::as.tibble()
+#glue::glue("
+#           In {date}, {driver} won the drivers championship with {points1} points and {constructor} won the constructors championship with {points2} points.
+#           ")
+standings <- xtable(F1_Standings_Final, caption = "Final Standings over the period \\label{tab1}")
+  print.xtable(standings,
+             # tabular.environment = "longtable",
+             floating = TRUE,
+             table.placement = 'H',
+             # scalebox = 0.3,
+             comment = FALSE,
+             caption.placement = 'bottom'
+             )
+```
 
 ## The 2012 Champion Driver
 
 ```{r 2012, include=FALSE, warning=FALSE}
-total_points_2012 <- total_points(data1=df_totalpoints, data2=champions, year=2012)
 totalpoints_F5(data=pointvalues, year=2012)
 totalpoints_A5(data=pointvalues, year=2012)
 totalpoints_F10(data=pointvalues, year=2012)
 totalpoints_A10(data=pointvalues, year=2012)
+totalpoints(data=pointvalues, year=2012)
+TP_value_F5_2012 <- (totalpoints_F5(data=pointvalues, year=2012)/totalpoints(data=pointvalues, year=2012))*100
+TP_value_A5_2012 <- (100 - TP_value_F5_2012)
+TP_value_F10_2012 <- (totalpoints_F10(data=pointvalues, year=2012)/totalpoints(data=pointvalues, year=2012))*100
+TP_value_A10_2012 <- (100 - TP_value_F10_2012)
+```
 
-scored_points_2012 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2012)
-scored_points_F5_2012 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2012))
-points_scored_F5_2012 <- points_scored_F5(data1 = scored_points_F5_2012)
-scored_points_A5_2012 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2012))
-points_scored_A5_2012 <- points_scored_A5(data1 = scored_points_A5_2012)
-scored_points_F10_2012 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2012))
-points_scored_F10_2012 <- points_scored_F10(data1 = scored_points_F10_2012)
-scored_points_A10_2012 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2012))
-points_scored_A10_2012 <- points_scored_A10(data1 = scored_points_A10_2012)
-
-winners_points_2012 <- winners_points(data = df_points_per_driver, year=2012)
-won_races_2012 <- won_races(data1 = df_winner_points, data2 = champions, year = 2012)
-won_races_F5_2012 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2012))
-points_won_F5_2012 <- points_won_F5(data1 = won_races_F5_2012)
-won_races_A5_2012 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2012))
-points_won_A5_2012 <- points_won_A5(data1 = won_races_A5_2012)
-won_races_F10_2012 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2012))
-points_won_F10_2012 <- points_won_F10(data1 = won_races_F10_2012)
-won_races_A10_2012 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2012))
-points_won_A10_2012 <- points_won_A10(data1 = won_races_A10_2012)
-
-accumpoints_2012 <- accumpoints(data1=df_totalpoints, data2=champions, year=2012)
-accumpoints_F10_2012 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2012)
-accumpoints_A10_2012 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2012)
+```{r 2012 points}
+glue::glue("
+           In {date[1,]}, {driver[1,]} won the drivers championship with {points1[1,]} points and {constructor[1,]} won the constructors championship with {points2[1,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[1,]} achieved {TP_value_F5_2012}% of his points within the first five races. {driver[1,]} achieved {TP_value_F10_2012}% of his points within the first ten races. This means that {driver[1,]} scored {TP_value_A5_2012}% of his points after the first five races and scored {TP_value_A10_2012}% of his points after the first ten races of the season. {driver[1,]} therefore scored more points towards the end of the season than the beginning. 
+           ")
 ```
 
 
-```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 3, fig.width = 6}
-plottotalpoints(data1=totalpoints_bound, year=2012)
-plottotalpoints_F10(data1=totalpoints_bound, year=2012)
-plottotalpoints_A10(data1=totalpoints_bound, year=2012)
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure1}", fig.ext = 'png', fig.height = 6, fig.width = 6}
+library(ggplot2)
+library(ggpubr)
+TP_2012 <- plottotalpoints(data1=totalpoints_bound, year=2012)
+TP_2012_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2012)
+TP_2012_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2012)
+
+ggarrange(
+  TP_2012,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2012_F10, TP_2012_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 To make your graphs look extra nice in latex world, you could use Tikz device. Replace dev - 'png' with 'tikz' in the chunk below. Notice this makes the build time longer and produces extra tex files - so if you are comfortable with this, set your device to Tikz and try it out:
 
 ```{r Figure2, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure2}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2012)
-plotwinning(data1=wonraces_bound, year=2012)
+S_2012 <- plotscoring(data1=scoredpoints_bound, year=2012)
+W_2012 <- plotwinning(data1=wonraces_bound, year=2012)
+ggarrange(S_2012, W_2012, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
 
-```{r Figure3, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure3}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2012)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2012)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2012)
+```{r Figure3, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure3}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2012 <- plotaccumpoints(data1=accumpoints_bound, year=2012)
+AC_2012_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2012)
+AC_2012_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2012)
+ggarrange(
+  AC_2012,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2012_F10, AC_2012_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 To reference the plot above, add a ``\\label'' after the caption in the chunk heading, as done above. Then reference the plot as such: As can be seen, Figures \ref{Figure1}  and \ref{Figure2} are excellent, with Figure \ref{Figure2} being particularly aesthetically pleasing due to its device setting of Tikz. The nice thing now is that it correctly numbers all your figures (and sections or tables) and will update if it moves. The links are also dynamic.
@@ -689,476 +931,507 @@ To reference the plot above, add a ``\\label'' after the caption in the chunk he
 ## The 2013 Champion Driver
 
 ```{r 2013, include=FALSE, warning=FALSE}
-total_points_2013 <- total_points(data1=df_totalpoints, data2=champions, year=2013)
 totalpoints_F5(data=pointvalues, year=2013)
 totalpoints_A5(data=pointvalues, year=2013)
 totalpoints_F10(data=pointvalues, year=2013)
 totalpoints_A10(data=pointvalues, year=2013)
-
-scored_points_2013 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2013)
-scored_points_F5_2013 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2013))
-points_scored_F5_2013 <- points_scored_F5(data1 = scored_points_F5_2013)
-scored_points_A5_2013 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2013))
-points_scored_A5_2013 <- points_scored_A5(data1 = scored_points_A5_2013)
-scored_points_F10_2013 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2013))
-points_scored_F10_2013 <- points_scored_F10(data1 = scored_points_F10_2013)
-scored_points_A10_2013 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2013))
-points_scored_A10_2013 <- points_scored_A10(data1 = scored_points_A10_2013)
-
-winners_points_2013 <- winners_points(data = df_points_per_driver, year=2013)
-won_races_2013 <- won_races(data1 = df_winner_points, data2 = champions, year = 2013)
-won_races_F5_2013 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2013))
-points_won_F5_2013 <- points_won_F5(data1 = won_races_F5_2013)
-won_races_A5_2013 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2013))
-points_won_A5_2013 <- points_won_A5(data1 = won_races_A5_2013)
-won_races_F10_2013 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2013))
-points_won_F10_2013 <- points_won_F10(data1 = won_races_F10_2013)
-won_races_A10_2013 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2013))
-points_won_A10_2013 <- points_won_A10(data1 = won_races_A10_2013)
-
-accumpoints_2013 <- accumpoints(data1=df_totalpoints, data2=champions, year=2013)
-accumpoints_F10_2013 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2013)
-accumpoints_A10_2013 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2013)
+totalpoints(data=pointvalues, year=2013)
+TP_value_F5_2013 <- (totalpoints_F5(data=pointvalues, year=2013)/totalpoints(data=pointvalues, year=2013))*100
+TP_value_A5_2013 <- (100 - TP_value_F5_2013)
+TP_value_F10_2013 <- (totalpoints_F10(data=pointvalues, year=2013)/totalpoints(data=pointvalues, year=2013))*100
+TP_value_A10_2013 <- (100 - TP_value_F10_2013)
 ```
 
-```{r Figure4, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure4}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2013)
-plottotalpoints_F10(data1=totalpoints_bound, year=2013)
-plottotalpoints_A10(data1=totalpoints_bound, year=2013)
+```{r 2013 Points}
+glue::glue("
+           In {date[2,]}, {driver[2,]} won the drivers championship with {points1[2,]} points and {constructor[2,]} won the constructors championship with {points2[2,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[2,]} achieved {TP_value_F5_2013}% of his points within the first five races. {driver[2,]} achieved {TP_value_F10_2013}% of his points within the first ten races. This means that {driver[2,]} scored {TP_value_A5_2013}% of his points after the first five races and scored {TP_value_A10_2013}% of his points after the first ten races of the season. {driver[2,]} therefore scored more points towards the end of the season than the beginning.
+           ")
+```
+
+
+```{r Figure4, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure4}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2013 <- plottotalpoints(data1=totalpoints_bound, year=2013)
+TP_2013_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2013)
+TP_2013_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2013)
+ggarrange(
+  TP_2013,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2013_F10, TP_2013_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure5, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure5}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2013)
-plotwinning(data1=wonraces_bound, year=2013)
+S_2013 <- plotscoring(data1=scoredpoints_bound, year=2013)
+W_2013 <- plotwinning(data1=wonraces_bound, year=2013)
+ggarrange(S_2013, W_2013, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure6, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure6}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2013)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2013)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2013)
+```{r Figure6, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure6}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2013 <- plotaccumpoints(data1=accumpoints_bound, year=2013)
+AC_2013_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2013)
+AC_2013_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2013)
+ggarrange(
+  AC_2013,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2013_F10, AC_2013_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2014 Champion Driver
 
 ```{r 2014, include=FALSE, warning=FALSE}
-total_points_2014 <- total_points(data1=df_totalpoints, data2=champions, year=2014)
+#total_points_2014 <- total_points(data1=df_totalpoints, data2=champions, year=2014)
 totalpoints_F5(data=pointvalues, year=2014)
 totalpoints_A5(data=pointvalues, year=2014)
 totalpoints_F10(data=pointvalues, year=2014)
 totalpoints_A10(data=pointvalues, year=2014)
-
-scored_points_2014 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2014)
-scored_points_F5_2014 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2014))
-points_scored_F5_2014 <- points_scored_F5(data1 = scored_points_F5_2014)
-scored_points_A5_2014 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2014))
-points_scored_A5_2014 <- points_scored_A5(data1 = scored_points_A5_2014)
-scored_points_F10_2014 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2014))
-points_scored_F10_2014 <- points_scored_F10(data1 = scored_points_F10_2014)
-scored_points_A10_2014 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2014))
-points_scored_A10_2014 <- points_scored_A10(data1 = scored_points_A10_2014)
-
-winners_points_2014 <- winners_points(data = df_points_per_driver, year=2014)
-won_races_2014 <- won_races(data1 = df_winner_points, data2 = champions, year = 2014)
-won_races_F5_2014 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2014))
-points_won_F5_2014 <- points_won_F5(data1 = won_races_F5_2014)
-won_races_A5_2014 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2014))
-points_won_A5_2014 <- points_won_A5(data1 = won_races_A5_2014)
-won_races_F10_2014 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2014))
-points_won_F10_2014 <- points_won_F10(data1 = won_races_F10_2014)
-won_races_A10_2014 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2014))
-points_won_A10_2014 <- points_won_A10(data1 = won_races_A10_2014)
-
-accumpoints_2014 <- accumpoints(data1=df_totalpoints, data2=champions, year=2014)
-accumpoints_F10_2014 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2014)
-accumpoints_A10_2014 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2014)
+totalpoints(data=pointvalues, year=2014)
+TP_value_F5_2014 <- (totalpoints_F5(data=pointvalues, year=2014)/totalpoints(data=pointvalues, year=2014))*100
+TP_value_A5_2014 <- (100 - TP_value_F5_2014)
+TP_value_F10_2014 <- (totalpoints_F10(data=pointvalues, year=2014)/totalpoints(data=pointvalues, year=2014))*100
+TP_value_A10_2014 <- (100 - TP_value_F10_2014)
 ```
 
-```{r Figure7, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure7}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2014)
-plottotalpoints_F10(data1=totalpoints_bound, year=2014)
-plottotalpoints_A10(data1=totalpoints_bound, year=2014)
+```{r 2014 Points}
+glue::glue("
+           In {date[3,]}, {driver[3,]} won the drivers championship with {points1[3,]} points and {constructor[3,]} won the constructors championship with {points2[3,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[3,]} achieved {TP_value_F5_2014}% of his points within the first five races. {driver[3,]} achieved {TP_value_F10_2014}% of his points within the first ten races. This means that {driver[3,]} scored {TP_value_A5_2014}% of his points after the first five races and scored {TP_value_A10_2014}% of his points after the first ten races of the season. {driver[3,]} therefore scored more points towards the end of the season than the beginning but did so in a balanced manner.
+           ")
+```
+
+
+```{r Figure7, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure7}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2014 <- plottotalpoints(data1=totalpoints_bound, year=2014)
+TP_2014_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2014)
+TP_2014_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2014)
+ggarrange(
+  TP_2014,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2014_F10, TP_2014_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure8, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure8}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2014)
-plotwinning(data1=wonraces_bound, year=2014)
+S_2014 <- plotscoring(data1=scoredpoints_bound, year=2014)
+W_2014 <- plotwinning(data1=wonraces_bound, year=2014)
+ggarrange(S_2014, W_2014, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure9, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure9}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2014)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2014)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2014)
+```{r Figure9, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure9}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2014 <- plotaccumpoints(data1=accumpoints_bound, year=2014)
+AC_2014_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2014)
+AC_2014_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2014)
+ggarrange(
+  AC_2014,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2014_F10, AC_2014_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 
 ## The 2015 Champion Driver
 
 ```{r 2015, include=FALSE, warning=FALSE}
-total_points_2015 <- total_points(data1=df_totalpoints, data2=champions, year=2015)
 totalpoints_F5(data=pointvalues, year=2015)
 totalpoints_A5(data=pointvalues, year=2015)
 totalpoints_F10(data=pointvalues, year=2015)
 totalpoints_A10(data=pointvalues, year=2015)
-
-scored_points_2015 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2015)
-scored_points_F5_2015 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2015))
-points_scored_F5_2015 <- points_scored_F5(data1 = scored_points_F5_2015)
-scored_points_A5_2015 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2015))
-points_scored_A5_2015 <- points_scored_A5(data1 = scored_points_A5_2015)
-scored_points_F10_2015 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2015))
-points_scored_F10_2015 <- points_scored_F10(data1 = scored_points_F10_2015)
-scored_points_A10_2015 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2015))
-points_scored_A10_2015 <- points_scored_A10(data1 = scored_points_A10_2015)
-
-winners_points_2015 <- winners_points(data = df_points_per_driver, year=2015)
-won_races_2015 <- won_races(data1 = df_winner_points, data2 = champions, year = 2015)
-won_races_F5_2015 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2015))
-points_won_F5_2015 <- points_won_F5(data1 = won_races_F5_2015)
-won_races_A5_2015 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2015))
-points_won_A5_2015 <- points_won_A5(data1 = won_races_A5_2015)
-won_races_F10_2015 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2015))
-points_won_F10_2015 <- points_won_F10(data1 = won_races_F10_2015)
-won_races_A10_2015 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2015))
-points_won_A10_2015 <- points_won_A10(data1 = won_races_A10_2015)
-
-accumpoints_2015 <- accumpoints(data1=df_totalpoints, data2=champions, year=2015)
-accumpoints_F10_2015 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2015)
-accumpoints_A10_2015 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2015)
+totalpoints(data=pointvalues, year=2015)
+TP_value_F5_2015 <- (totalpoints_F5(data=pointvalues, year=2015)/totalpoints(data=pointvalues, year=2015))*100
+TP_value_A5_2015 <- (100 - TP_value_F5_2015)
+TP_value_F10_2015 <- (totalpoints_F10(data=pointvalues, year=2015)/totalpoints(data=pointvalues, year=2015))*100
+TP_value_A10_2015 <- (100 - TP_value_F10_2015)
 ```
 
-```{r Figure10, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure10}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2015)
-plottotalpoints_F10(data1=totalpoints_bound, year=2015)
-plottotalpoints_A10(data1=totalpoints_bound, year=2015)
+```{r 2015 Points}
+glue::glue("
+           In {date[4,]}, {driver[4,]} won the drivers championship with {points1[4,]} points and {constructor[4,]} won the constructors championship with {points2[4,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[4,]} achieved {TP_value_F5_2014}% of his points within the first five races. {driver[4,]} achieved {TP_value_F10_2015}% of his points within the first ten races. This means that {driver[4,]} scored {TP_value_A5_2015}% of his points after the first five races and scored {TP_value_A10_2015}% of his points after the first ten races of the season. {driver[4,]} therefore scored more points towards the end of the season than the beginning but did so in a balanced manner.
+           ")
+```
+
+
+```{r Figure10, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure10}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2015 <- plottotalpoints(data1=totalpoints_bound, year=2015)
+TP_2015_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2015)
+TP_2015_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2015)
+ggarrange(
+  TP_2015,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2015_F10, TP_2015_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure11, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure11}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2015)
-plotwinning(data1=wonraces_bound, year=2015)
+S_2015 <- plotscoring(data1=scoredpoints_bound, year=2015)
+W_2015 <- plotwinning(data1=wonraces_bound, year=2015)
+ggarrange(S_2015, W_2015, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure12, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure12}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2015)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2015)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2015)
+```{r Figure12, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure12}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2015 <- plotaccumpoints(data1=accumpoints_bound, year=2015)
+AC_2015_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2015)
+AC_2015_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2015)
+ggarrange(
+  AC_2015,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2015_F10, AC_2015_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2016 Champion Driver
 
 ```{r 2016, include=FALSE, warning=FALSE}
-total_points_2016 <- total_points(data1=df_totalpoints, data2=champions, year=2016)
 totalpoints_F5(data=pointvalues, year=2016)
 totalpoints_A5(data=pointvalues, year=2016)
 totalpoints_F10(data=pointvalues, year=2016)
 totalpoints_A10(data=pointvalues, year=2016)
-
-scored_points_2016 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2016)
-scored_points_F5_2016 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2016))
-points_scored_F5_2016 <- points_scored_F5(data1 = scored_points_F5_2016)
-scored_points_A5_2016 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2016))
-points_scored_A5_2016 <- points_scored_A5(data1 = scored_points_A5_2016)
-scored_points_F10_2016 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2016))
-points_scored_F10_2016 <- points_scored_F10(data1 = scored_points_F10_2016)
-scored_points_A10_2016 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2016))
-points_scored_A10_2016 <- points_scored_A10(data1 = scored_points_A10_2016)
-
-winners_points_2016 <- winners_points(data = df_points_per_driver, year=2016)
-won_races_2016 <- won_races(data1 = df_winner_points, data2 = champions, year = 2016)
-won_races_F5_2016 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2016))
-points_won_F5_2016 <- points_won_F5(data1 = won_races_F5_2016)
-won_races_A5_2016 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2016))
-points_won_A5_2016 <- points_won_A5(data1 = won_races_A5_2016)
-won_races_F10_2016 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2016))
-points_won_F10_2016 <- points_won_F10(data1 = won_races_F10_2016)
-won_races_A10_2016 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2016))
-points_won_A10_2016 <- points_won_A10(data1 = won_races_A10_2016)
-
-accumpoints_2016 <- accumpoints(data1=df_totalpoints, data2=champions, year=2016)
-accumpoints_F10_2016 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2016)
-accumpoints_A10_2016 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2016)
+totalpoints(data=pointvalues, year=2016)
+TP_value_F5_2016 <- (totalpoints_F5(data=pointvalues, year=2016)/totalpoints(data=pointvalues, year=2016))*100
+TP_value_A5_2016 <- (100 - TP_value_F5_2016)
+TP_value_F10_2016 <- (totalpoints_F10(data=pointvalues, year=2016)/totalpoints(data=pointvalues, year=2016))*100
+TP_value_A10_2016 <- (100 - TP_value_F10_2016)
 ```
 
-```{r Figure13, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure13}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2016)
-plottotalpoints_F10(data1=totalpoints_bound, year=2016)
-plottotalpoints_A10(data1=totalpoints_bound, year=2016)
+```{r 2016 Points}
+glue::glue("
+           In {date[5,]}, {driver[5,]} won the drivers championship with {points1[5,]} points and {constructor[5,]} won the constructors championship with {points2[5,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[5,]} achieved {TP_value_F5_2016}% of his points within the first five races. {driver[5,]} achieved {TP_value_F10_2016}% of his points within the first ten races. This means that {driver[5,]} scored {TP_value_A5_2016}% of his points after the first five races and scored {TP_value_A10_2016}% of his points after the first ten races of the season. {driver[5,]} therefore scored more points towards the end of the season than the beginning but did so in a balanced manner.
+           ")
+```
+
+
+```{r Figure13, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure13}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2016 <- plottotalpoints(data1=totalpoints_bound, year=2016)
+TP_2016_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2016)
+TP_2016_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2016)
+ggarrange(
+  TP_2016,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2016_F10, TP_2016_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure14, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure14}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2016)
-plotwinning(data1=wonraces_bound, year=2016)
+S_2016 <- plotscoring(data1=scoredpoints_bound, year=2016)
+W_2016 <- plotwinning(data1=wonraces_bound, year=2016)
+ggarrange(S_2016, W_2016, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure15, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure15}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2016)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2016)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2016)
+```{r Figure15, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure15}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2016 <- plotaccumpoints(data1=accumpoints_bound, year=2016)
+AC_2016_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2016)
+AC_2016_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2016)
+ggarrange(
+  AC_2016,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2016_F10, AC_2016_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2017 Champion Driver
 
 ```{r 2017, include=FALSE, warning=FALSE}
-total_points_2017 <- total_points(data1=df_totalpoints, data2=champions, year=2017)
 totalpoints_F5(data=pointvalues, year=2017)
 totalpoints_A5(data=pointvalues, year=2017)
 totalpoints_F10(data=pointvalues, year=2017)
 totalpoints_A10(data=pointvalues, year=2017)
-
-scored_points_2017 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2017)
-scored_points_F5_2017 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2017))
-points_scored_F5_2017 <- points_scored_F5(data1 = scored_points_F5_2017)
-scored_points_A5_2017 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2017))
-points_scored_A5_2017 <- points_scored_A5(data1 = scored_points_A5_2017)
-scored_points_F10_2017 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2017))
-points_scored_F10_2017 <- points_scored_F10(data1 = scored_points_F10_2017)
-scored_points_A10_2017 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2017))
-points_scored_A10_2017 <- points_scored_A10(data1 = scored_points_A10_2017)
-
-
-winners_points_2017 <- winners_points(data = df_points_per_driver, year=2017)
-won_races_2017 <- won_races(data1 = df_winner_points, data2 = champions, year = 2017)
-won_races_F5_2017 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2017))
-points_won_F5_2017 <- points_won_F5(data1 = won_races_F5_2017)
-won_races_A5_2017 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2017))
-points_won_A5_2017 <- points_won_A5(data1 = won_races_A5_2017)
-won_races_F10_2017 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2017))
-points_won_F10_2017 <- points_won_F10(data1 = won_races_F10_2017)
-won_races_A10_2017 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2017))
-points_won_A10_2017 <- points_won_A10(data1 = won_races_A10_2017)
-
-
-accumpoints_2017 <- accumpoints(data1=df_totalpoints, data2=champions, year=2017)
-accumpoints_F10_2017 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2017)
-accumpoints_A10_2017 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2017)
+totalpoints(data=pointvalues, year=2017)
+TP_value_F5_2017 <- (totalpoints_F5(data=pointvalues, year=2017)/totalpoints(data=pointvalues, year=2017))*100
+TP_value_A5_2017 <- (100 - TP_value_F5_2017)
+TP_value_F10_2017 <- (totalpoints_F10(data=pointvalues, year=2017)/totalpoints(data=pointvalues, year=2017))*100
+TP_value_A10_2017 <- (100 - TP_value_F10_2017)
 ```
 
-```{r Figure16, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure16}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2017)
-plottotalpoints_F10(data1=totalpoints_bound, year=2017)
-plottotalpoints_A10(data1=totalpoints_bound, year=2017)
+```{r 2017 Points}
+glue::glue("
+           In {date[6,]}, {driver[6,]} won the drivers championship with {points1[6,]} points and {constructor[6,]} won the constructors championship with {points2[6,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[6,]} achieved {TP_value_F5_2017}% of his points within the first five races. {driver[6,]} achieved {TP_value_F10_2017}% of his points within the first ten races. This means that {driver[6,]} scored {TP_value_A5_2017}% of his points after the first five races and scored {TP_value_A10_2017}% of his points after the first ten races of the season. {driver[6,]} therefore scored more points towards the end of the season than the beginning but did so in a balanced manner.
+           ")
+```
+
+```{r Figure16, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure16}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2017 <- plottotalpoints(data1=totalpoints_bound, year=2017)
+TP_2017_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2017)
+TP_2017_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2017)
+ggarrange(
+  TP_2017,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2017_F10, TP_2017_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure17, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure17}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2017)
-plotwinning(data1=wonraces_bound, year=2017)
+S_2017 <- plotscoring(data1=scoredpoints_bound, year=2017)
+W_2017 <- plotwinning(data1=wonraces_bound, year=2017)
+ggarrange(S_2017, W_2017, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure18, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure18}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2017)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2017)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2017)
+```{r Figure18, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure18}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2017 <- plotaccumpoints(data1=accumpoints_bound, year=2017)
+AC_2017_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2017)
+AC_2017_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2017)
+ggarrange(
+  AC_2017,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2017_F10, AC_2017_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2018 Champion Driver
 
 ```{r 2018, include=FALSE, warning=FALSE}
-total_points_2018 <- total_points(data1=df_totalpoints, data2=champions, year=2018)
 totalpoints_F5(data=pointvalues, year=2018)
 totalpoints_A5(data=pointvalues, year=2018)
 totalpoints_F10(data=pointvalues, year=2018)
 totalpoints_A10(data=pointvalues, year=2018)
-
-scored_points_2018 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2018)
-scored_points_F5_2018 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2018))
-points_scored_F5_2018 <- points_scored_F5(data1 = scored_points_F5_2018)
-scored_points_A5_2018 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2018))
-points_scored_A5_2018 <- points_scored_A5(data1 = scored_points_A5_2018)
-scored_points_F10_2018 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2018))
-points_scored_F10_2018 <- points_scored_F10(data1 = scored_points_F10_2018)
-scored_points_A10_2018 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2018))
-points_scored_A10_2018 <- points_scored_A10(data1 = scored_points_A10_2018)
-
-winners_points_2018 <- winners_points(data = df_points_per_driver, year=2018)
-won_races_2018 <- won_races(data1 = df_winner_points, data2 = champions, year = 2018)
-won_races_F5_2018 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2018))
-points_won_F5_2018 <- points_won_F5(data1 = won_races_F5_2018)
-won_races_A5_2018 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2018))
-points_won_A5_2018 <- points_won_A5(data1 = won_races_A5_2018)
-won_races_F10_2018 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2018))
-points_won_F10_2018 <- points_won_F10(data1 = won_races_F10_2018)
-won_races_A10_2018 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2018))
-points_won_A10_2018 <- points_won_A10(data1 = won_races_A10_2018)
-
-accumpoints_2018 <- accumpoints(data1=df_totalpoints, data2=champions, year=2018)
-accumpoints_F10_2018 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2018)
-accumpoints_A10_2018 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2018)
+totalpoints(data=pointvalues, year=2018)
+TP_value_F5_2018 <- (totalpoints_F5(data=pointvalues, year=2018)/totalpoints(data=pointvalues, year=2018))*100
+TP_value_A5_2018 <- (100 - TP_value_F5_2018)
+TP_value_F10_2018 <- (totalpoints_F10(data=pointvalues, year=2018)/totalpoints(data=pointvalues, year=2018))*100
+TP_value_A10_2018 <- (100 - TP_value_F10_2018)
 ```
 
-```{rFigure19, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure19}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2018)
-plottotalpoints_F10(data1=totalpoints_bound, year=2018)
-plottotalpoints_A10(data1=totalpoints_bound, year=2018)
+```{r 2018 Points}
+glue::glue("
+           In {date[7,]}, {driver[7,]} won the drivers championship with {points1[7,]} points and {constructor[7,]} won the constructors championship with {points2[7,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[7,]} achieved {TP_value_F5_2018}% of his points within the first five races. {driver[7,]} achieved {TP_value_F10_2018}% of his points within the first ten races. This means that {driver[7,]} scored {TP_value_A5_2018}% of his points after the first five races and scored {TP_value_A10_2018}% of his points after the first ten races of the season. {driver[7,]} therefore scored more points towards the end of the season than the beginning.
+           ")
+```
+
+
+```{r Figure19, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure19}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2018 <- plottotalpoints(data1=totalpoints_bound, year=2018)
+TP_2018_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2018)
+TP_2018_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2018)
+ggarrange(
+  TP_2018,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2018_F10, TP_2018_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure20, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure20}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2018)
-plotwinning(data1=wonraces_bound, year=2018)
+S_2018 <- plotscoring(data1=scoredpoints_bound, year=2018)
+W_2018 <- plotwinning(data1=wonraces_bound, year=2018)
+ggarrange(S_2018, W_2018, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure21, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure21}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2018)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2018)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2018)
+```{r Figure21, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure21}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2018 <- plotaccumpoints(data1=accumpoints_bound, year=2018)
+AC_2018_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2018)
+AC_2018_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2018)
+ggarrange(
+  AC_2018,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2018_F10, AC_2018_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2019 Champion Driver
 
 ```{r 2019, include=FALSE, warning=FALSE}
-total_points_2019 <- total_points(data1=df_totalpoints, data2=champions, year=2019)
 totalpoints_F5(data=pointvalues, year=2019)
 totalpoints_A5(data=pointvalues, year=2019)
 totalpoints_F10(data=pointvalues, year=2019)
 totalpoints_A10(data=pointvalues, year=2019)
-
-scored_points_2019 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2019)
-scored_points_F5_2019 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2019))
-points_scored_F5_2019 <- points_scored_F5(data1 = scored_points_F5_2019)
-scored_points_A5_2019 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2019))
-points_scored_A5_2019 <- points_scored_A5(data1 = scored_points_A5_2019)
-scored_points_F10_2019 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2019))
-points_scored_F10_2019 <- points_scored_F10(data1 = scored_points_F10_2019)
-scored_points_A10_2019 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2019))
-points_scored_A10_2019 <- points_scored_A10(data1 = scored_points_A10_2019)
-
-winners_points_2019 <- winners_points(data = df_points_per_driver, year=2019)
-won_races_2019 <- won_races(data1 = df_winner_points, data2 = champions, year = 2019)
-won_races_F5_2019 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2019))
-points_won_F5_2019 <- points_won_F5(data1 = won_races_F5_2019)
-won_races_A5_2019 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2019))
-points_won_A5_2019 <- points_won_A5(data1 = won_races_A5_2019)
-won_races_F10_2019 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2019))
-points_won_F10_2019 <- points_won_F10(data1 = won_races_F10_2019)
-won_races_A10_2019 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2019))
-points_won_A10_2019 <- points_won_A10(data1 = won_races_A10_2019)
-
-accumpoints_2019 <- accumpoints(data1=df_totalpoints, data2=champions, year=2019)
-accumpoints_F10_2019 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2019)
-accumpoints_A10_2019 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2019)
+totalpoints(data=pointvalues, year=2019)
+TP_value_F5_2019 <- (totalpoints_F5(data=pointvalues, year=2019)/totalpoints(data=pointvalues, year=2019))*100
+TP_value_A5_2019 <- (100 - TP_value_F5_2019)
+TP_value_F10_2019 <- (totalpoints_F10(data=pointvalues, year=2019)/totalpoints(data=pointvalues, year=2019))*100
+TP_value_A10_2019 <- (100 - TP_value_F10_2019)
 ```
 
-```{r Figure22, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure22}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2019)
-plottotalpoints_F10(data1=totalpoints_bound, year=2019)
-plottotalpoints_A10(data1=totalpoints_bound, year=2019)
+```{r 2019 Points}
+glue::glue("
+           In {date[8,]}, {driver[8,]} won the drivers championship with {points1[8,]} points and {constructor[8,]} won the constructors championship with {points2[8,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[8,]} achieved {TP_value_F5_2019}% of his points within the first five races. {driver[8,]} achieved {TP_value_F10_2019}% of his points within the first ten races. This means that {driver[8,]} scored {TP_value_A5_2019}% of his points after the first five races and scored {TP_value_A10_2019}% of his points after the first ten races of the season. {driver[8,]} therefore scored less points towards the end of the season than the beginning but did so in a balanced manner.
+           ")
+```
+
+
+```{r Figure22, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure22}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2019 <- plottotalpoints(data1=totalpoints_bound, year=2019)
+TP_2019_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2019)
+TP_2019_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2019)
+ggarrange(
+  TP_2019,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2019_F10, TP_2019_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure23, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure23}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2019)
-plotwinning(data1=wonraces_bound, year=2019)
+S_2019 <- plotscoring(data1=scoredpoints_bound, year=2019)
+W_2019 <- plotwinning(data1=wonraces_bound, year=2019)
+ggarrange(S_2019, W_2019, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure24, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure24}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2019)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2019)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2019)
+```{r Figure24, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure24}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2019 <- plotaccumpoints(data1=accumpoints_bound, year=2019)
+AC_2019_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2019)
+AC_2019_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2019)
+ggarrange(
+  AC_2019,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2019_F10, AC_2019_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2020 Champion Driver
 
 ```{r 2020, include=FALSE, warning=FALSE}
-total_points_2020 <- total_points(data1=df_totalpoints, data2=champions, year=2020)
+#total_points_2020 <- total_points(data1=df_totalpoints, data2=champions, year=2020)
 totalpoints_F5(data=pointvalues, year=2020)
 totalpoints_A5(data=pointvalues, year=2020)
 totalpoints_F10(data=pointvalues, year=2020)
 totalpoints_A10(data=pointvalues, year=2020)
-
-scored_points_2020 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2020)
-scored_points_F5_2020 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2020))
-points_scored_F5_2020 <- points_scored_F5(data1 = scored_points_F5_2020)
-scored_points_A5_2020 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2020))
-points_scored_A5_2020 <- points_scored_A5(data1 = scored_points_A5_2020)
-scored_points_F10_2020 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2020))
-points_scored_F10_2020 <- points_scored_F10(data1 = scored_points_F10_2020)
-scored_points_A10_2020 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2020))
-points_scored_A10_2020 <- points_scored_A10(data1 = scored_points_A10_2020)
-
-
-winners_points_2020 <- winners_points(data = df_points_per_driver, year=2020)
-won_races_2020 <- won_races(data1 = df_winner_points, data2 = champions, year = 2020)
-won_races_F5_2020 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2020))
-points_won_F5_2020 <- points_won_F5(data1 = won_races_F5_2020)
-won_races_A5_2020 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2020))
-points_won_A5_2020 <- points_won_A5(data1 = won_races_A5_2020)
-won_races_F10_2020 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2020))
-points_won_F10_2020 <- points_won_F10(data1 = won_races_F10_2020)
-won_races_A10_2020 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2020))
-points_won_A10_2020 <- points_won_A10(data1 = won_races_A10_2020)
-
-
-accumpoints_2020 <- accumpoints(data1=df_totalpoints, data2=champions, year=2020)
-accumpoints_F10_2020 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2020)
+totalpoints(data=pointvalues, year=2020)
+TP_value_F5_2020 <- (totalpoints_F5(data=pointvalues, year=2020)/totalpoints(data=pointvalues, year=2020))*100
+TP_value_A5_2020 <- (100 - TP_value_F5_2020)
+TP_value_F10_2020 <- (totalpoints_F10(data=pointvalues, year=2020)/totalpoints(data=pointvalues, year=2020))*100
+TP_value_A10_2020 <- (100 - TP_value_F10_2020)
 ```
 
-```{r Figure25, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure25}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2020)
-plottotalpoints_F10(data1=totalpoints_bound, year=2020)
-plottotalpoints_A10(data1=totalpoints_bound, year=2020)
+```{r 2020 Points}
+glue::glue("
+           In {date[9,]}, {driver[9,]} won the drivers championship with {points1[9,]} points and {constructor[9,]} won the constructors championship with {points2[9,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[9,]} achieved {TP_value_F5_2020}% of his points within the first five races. {driver[9,]} achieved {TP_value_F10_2020}% of his points within the first ten races. This means that {driver[9,]} scored {TP_value_A5_2020}% of his points after the first five races and scored {TP_value_A10_2020}% of his points after the first ten races of the season. {driver[9,]} therefore scored less points towards the end of the season than the beginning.
+           ")
+```
+
+
+```{r Figure25, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure25}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2020 <- plottotalpoints(data1=totalpoints_bound, year=2020)
+TP_2020_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2020)
+TP_2020_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2020)
+ggarrange(
+  TP_2020,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2020_F10, TP_2020_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure26, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure26}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2020)
-plotwinning(data1=wonraces_bound, year=2020)
+S_2020 <- plotscoring(data1=scoredpoints_bound, year=2020)
+W_2020 <- plotwinning(data1=wonraces_bound, year=2020)
+ggarrange(S_2020, W_2020, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure27, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure27}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2020)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2020)
-accumpoints_A10_2020 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2020)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2020)
+```{r Figure27, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure27}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2020 <- plotaccumpoints(data1=accumpoints_bound, year=2020)
+AC_2020_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2020)
+AC_2020_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2020)
+ggarrange(
+  AC_2020,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2020_F10, AC_2020_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ## The 2021 Champion Driver
 
 ```{r 2021, include=FALSE, warning=FALSE}
-total_points_2021 <- total_points(data1=df_totalpoints, data2=champions, year=2021)
 totalpoints_F5(data=pointvalues, year=2021)
 totalpoints_A5(data=pointvalues, year=2021)
 totalpoints_F10(data=pointvalues, year=2021)
 totalpoints_A10(data=pointvalues, year=2021)
-
-scored_points_2021 <- scored_points(data1 = df_scorer_points, data2 = champions, year = 2021)
-scored_points_F5_2021 <- scored_points_F5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2021))
-points_scored_F5_2021 <- points_scored_F5(data1 = scored_points_F5_2021)
-scored_points_A5_2021 <- scored_points_A5(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2021))
-points_scored_A5_2021 <- points_scored_A5(data1 = scored_points_A5_2021)
-scored_points_F10_2021 <- scored_points_F10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2021))
-points_scored_F10_2021 <- points_scored_F10(data1 = scored_points_F10_2021)
-scored_points_A10_2021 <- scored_points_A10(data = scored_points(data1 = df_scorer_points, data2 = champions, year = 2021))
-points_scored_A10_2021 <- points_scored_A10(data1 = scored_points_A10_2021)
-
-
-winners_points_2021 <- winners_points(data = df_points_per_driver, year=2021)
-won_races_2021 <- won_races(data1 = df_winner_points, data2 = champions, year = 2021)
-won_races_F5_2021 <- won_races_F5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2021))
-points_won_F5_2021 <- points_won_F5(data1 = won_races_F5_2021)
-won_races_A5_2021 <- won_races_A5(data = won_races(data1 = df_winner_points, data2 = champions, year = 2021))
-points_won_A5_2021 <- points_won_A5(data1 = won_races_A5_2021)
-won_races_F10_2021 <- won_races_F10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2021))
-points_won_F10_2021 <- points_won_F10(data1 = won_races_F10_2021)
-won_races_A10_2021 <- won_races_A10(data = won_races(data1 = df_winner_points, data2 = champions, year = 2021))
-points_won_A10_2021 <- points_won_A10(data1 = won_races_A10_2021)
-
-
-accumpoints_2021 <- accumpoints(data1=df_totalpoints, data2=champions, year=2021)
-accumpoints_F10_2021 <- accumpoints_F10(data1=df_totalpoints, data2=champions, year=2021)
-accumpoints_A10_2021 <- accumpoints_A10(data1=df_totalpoints, data2=champions, year=2021)
+totalpoints(data=pointvalues, year=2021)
+TP_value_F5_2021 <- (totalpoints_F5(data=pointvalues, year=2021)/totalpoints(data=pointvalues, year=2021))*100
+TP_value_A5_2021 <- (100 - TP_value_F5_2021)
+TP_value_F10_2021 <- (totalpoints_F10(data=pointvalues, year=2021)/totalpoints(data=pointvalues, year=2021))*100
+TP_value_A10_2021 <- (100 - TP_value_F10_2021)
 ```
 
-```{r Figure28, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure28}", fig.height = 3, fig.width = 6, dev = 'png'}
-plottotalpoints(data1=totalpoints_bound, year=2021)
-plottotalpoints_F10(data1=totalpoints_bound, year=2021)
-plottotalpoints_A10(data1=totalpoints_bound, year=2021)
+```{r 2021 Points}
+glue::glue("
+           In {date[10,]}, {driver[10,]} won the drivers championship with {points1[10,]} points and {constructor[10,]} won the constructors championship with {points2[10,]} points.
+           ")
+glue::glue("
+           In this same year, {driver[10,]} achieved {TP_value_F5_2021}% of his points within the first five races. {driver[10,]} achieved {TP_value_F10_2021}% of his points within the first ten races. This means that {driver[10,]} scored {TP_value_A5_2021}% of his points after the first five races and scored {TP_value_A10_2021}% of his points after the first ten races of the season. {driver[10,]} therefore scored more points towards the end of the season than the beginning but did so in a blanced manner.
+           ")
+```
+
+
+```{r Figure28, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure28}", fig.height = 6, fig.width = 6, dev = 'png'}
+TP_2021 <- plottotalpoints(data1=totalpoints_bound, year=2021)
+TP_2021_F10 <- plottotalpoints_F10(data1=totalpoints_bound, year=2021)
+TP_2021_A10 <- plottotalpoints_A10(data1=totalpoints_bound, year=2021)
+ggarrange(
+  TP_2021,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(TP_2021_F10, TP_2021_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 ```{r Figure29, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure29}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotscoring(data1=scoredpoints_bound, year=2021)
-plotwinning(data1=wonraces_bound, year=2021)
+S_2021 <- plotscoring(data1=scoredpoints_bound, year=2021)
+W_2021 <- plotwinning(data1=wonraces_bound, year=2021)
+ggarrange(S_2021, W_2021, ncol = 2, labels = c("",""), nrow = 1)
 ```
 
-```{r Figure30, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure30}", fig.height = 3, fig.width = 6, dev = 'png'}
-plotaccumpoints(data1=accumpoints_bound, year=2021)
-plotaccumpoints_F10(data1=accumpoints_bound, year=2021)
-plotaccumpoints_A10(data1=accumpoints_bound, year=2021)
+```{r Figure30, warning =  FALSE, fig.align = 'center', fig.cap = "Caption Here \\label{Figure30}", fig.height = 6, fig.width = 6, dev = 'png'}
+AC_2021 <- plotaccumpoints(data1=accumpoints_bound, year=2021)
+AC_2021_F10 <- plotaccumpoints_F10(data1=accumpoints_bound, year=2021)
+AC_2021_A10 <- plotaccumpoints_A10(data1=accumpoints_bound, year=2021)
+ggarrange(
+  AC_2021,                # First row with line plot
+  # Second row with box and dot plots
+  ggarrange(AC_2021_F10, AC_2021_A10, ncol = 2, labels = c("", "")), 
+  nrow = 2, 
+  labels = ""       # Label of the line plot
+  )
 ```
 
 # Splitting a page
